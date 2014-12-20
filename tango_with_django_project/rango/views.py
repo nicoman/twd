@@ -51,7 +51,7 @@ def category(request, category_name_slug):
         context_dict['category'] = category
 
         # Add slug name to context
-        context_dict['category_name_url'] = category_name_slug
+        context_dict['category_name_slug'] = category_name_slug
     except Category.DoesNotExist:
         # We get here if we didn't find the specified category.
         # Don't do anything = the template displays the "no category" message
@@ -94,7 +94,6 @@ def add_page(request, category_name_slug):
         cat = Category.objects.get(slug=category_name_slug)
     except Category.DoesNotExist:
         cat = None
-
     if request.method == 'POST':
         form = PageForm(request.POST)
         if form.is_valid():
@@ -105,6 +104,7 @@ def add_page(request, category_name_slug):
                 page.save()
                 # Probabbly better to use a redirect here.
                 return category(request, category_name_slug)
+                #return HttpResponseRedirect(reverse('index'))
         else:
             print form.errors
     else:
