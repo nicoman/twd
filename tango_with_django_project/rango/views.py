@@ -2,6 +2,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import render
+from datetime import datetime
 from rango.models import Category, Page
 from rango.forms import CategoryForm, PageForm, UserForm, UserProfileForm
 
@@ -19,12 +20,46 @@ def index(request):
 
     context_dict = {'categories': category_list, 'most_views_pages': pages_list}
 
+    # Get the number of visits to the site.
+    # We use the COOKIES.get() function to obtain the visits cookie.
+    # If the cookie exists, the value returned is casted to an integer.
+    # If hte cookie doesn't exist, we default to zero and cast that.
+
+    visits = request.session.get('visits')
+    if not visits:
+        visits = 0
+    reset_last_visit_time = False
+
+    last_visit = request.session.get('last_visit')
+    if last_visit:
+        last_visit_time = datetime.strptime(last_visit[:-7], "%Y-%m-%d %H:%M:%S")
+        if (datetime.now() - last_visit_time).seconds > 2:
+            # ... reassign the value of the cookie to +1 of what it was before
+            visits += 1
+            # ... and update the last visit cookie, too.
+            reset_last_visit_time = True
+    else:
+        # Cookie last_visit doesn't exist, so create it to the current date/time
+        reset_last_visit_time = True
+
+    context_dict['visits'] = visits
+    request.session['visits'] = visits
+
+    if reset_last_visit_time:
+        request.session['last_visit'] = str(datetime.now())
+
+    response = render(request, 'rango/index.html', context_dict)
+
     # Render the response and send it back!
-    return render(request, 'rango/index.html', context_dict)
+    return response
 
 
 def about(request):
-    return render(request, 'rango/about.html', {})
+    if request.session.get('visits'):
+        count = request.session.get('visits')
+    else:
+        count = 0
+    return render(request, 'rango/about.html', {'visits': count})
 
 
 def category(request, category_name_slug):
