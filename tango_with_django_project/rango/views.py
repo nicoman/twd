@@ -8,6 +8,18 @@ from rango.forms import CategoryForm, PageForm, UserForm, UserProfileForm
 from rango.bing_search import run_query
 
 
+def get_category_list(max_results=0, starts_with=''):
+    cat_list = []
+    if starts_with:
+        cat_list = Category.objects.filter(name__istartswith=starts_with)
+
+    if max_results > 0:
+        if len(cat_list) > max_results:
+            cat_list = cat_list[:max_results]
+
+    return cat_list
+
+
 def index(request):
     # Query the database for a list of ALL categories currently stored.
     # Order the categories by no. likes in descending order.
@@ -340,3 +352,14 @@ def like_category(request):
             likes = cat.likes
 
     return HttpResponse(likes)
+
+
+def suggest_category(request):
+    cats = []
+    starts_with = ''
+    if request.method == 'GET':
+        starts_with = request.GET['suggestion']
+
+    cats = get_category_list(8, starts_with)
+
+    return render(request, 'rango/cats.html', {'cats': cats})
